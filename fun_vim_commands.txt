@@ -1,0 +1,8 @@
+Fun VIM commands!
+
+Replace a word
+yiw
+[move to next word]
+ciw
+ctrl+r
+0
