@@ -1,0 +1,12 @@
+{
+	"files.exclude": {
+		"C:/Users/Jack/source/unreal/SecondProject/.git": true,
+		"C:/Users/Jack/source/unreal/SecondProject/.vs": true,
+		"C:/Users/Jack/source/unreal/SecondProject/.vscode": true,
+		"C:/Users/Jack/source/unreal/SecondProject/Content": true,
+		"C:/Users/Jack/source/unreal/SecondProject/DerivedDataCache": true,
+		"C:/Users/Jack/source/unreal/SecondProject/Intermediate": true,
+		"C:/Users/Jack/source/unreal/SecondProject/Saved": true,
+		"C:/Users/Jack/source/unreal/SecondProject/unreal-project": true
+	}
+}
