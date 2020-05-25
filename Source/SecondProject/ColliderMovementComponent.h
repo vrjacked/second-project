@@ -12,8 +12,8 @@
 UCLASS()
 class SECONDPROJECT_API UColliderMovementComponent : public UPawnMovementComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 public:
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
-	
+    virtual void TickComponent(float DeltaTime, enum ELevelTick TickType,
+                               FActorComponentTickFunction* ThisTickFunction) override;
 };

@@ -41,6 +41,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Movement")
 	class UColliderMovementComponent* OurMovementComponent;
 
+	UPROPERTY(EditAnywhere, Category = "Movement")
+	float Speed;
+
 	virtual UPawnMovementComponent* GetMovementComponent() const override;
 
 	FORCEINLINE UStaticMeshComponent* GetMeshComponent() { return MeshComponent; }
@@ -55,9 +58,9 @@ public:
 
 private:
 
-	void MoveForward(float input);
-	void MoveRight(float input);
-	void YawCamera(float input);
-	void PitchCamera(float input);
-
+	void MoveForward(float Input);
+	void MoveRight(float Input);
+	void YawCamera(float AxisValue);
+	void PitchCamera(float AxisValue);
+	FVector2D CameraInput;
 };
