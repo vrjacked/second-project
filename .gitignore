@@ -6,6 +6,7 @@
 .vs/
 
 #Games/SecondProject/Content/
+Content/StarterContent/
 
 # Compiled Object files
 *.slo
@@ -493,4 +494,3 @@ MigrationBackup/
 /Source/FBX/Walks/Root_Motion/Walk_13_Power_Walk_Loop.fbx
 /Source/FBX/Walks/In_Place/Walk_13_Power_Walk_Loop_IP.fbx
 
-!/Content/MyContent/
