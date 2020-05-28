@@ -6,8 +6,7 @@
 .vs/
 
 Games/SecondProject/Content/
-
-
+!Games/SecondProject/Content/MyContent/
 
 # Compiled Object files
 *.slo

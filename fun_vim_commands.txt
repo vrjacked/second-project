@@ -4,5 +4,4 @@ Replace a word
 yiw
 [move to next word]
 ciw
-ctrl+r
-0
+ctrl+r, 0

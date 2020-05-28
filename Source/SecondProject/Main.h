@@ -61,11 +61,14 @@ public:
 	float StaminaDrainRate;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
 	bool bAttacking;
-
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Particles")
+    class UParticleSystem* HitParticles;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite = "PlayerStats")
 	int32 Jackhammers;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite = "PlayerStats")
 	ESlateVisibility VisibilityEnum;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sounds")
+    class USoundCue* HitSound;
 	bool Sprinting;
 	bool SprintingMoving;
 
@@ -118,5 +121,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
 
-
+	UFUNCTION(BlueprintCallable)
+	void PlaySwingSound();
 };

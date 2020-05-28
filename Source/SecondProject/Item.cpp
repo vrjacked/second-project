@@ -62,8 +62,6 @@ void AItem::OnOverlapBegin
 	const FHitResult& SweepResult
 ) 
 {
-	UE_LOG(LogTemp, Warning, TEXT("On Overlap - Hot Reload!"))
-
 	if (OverlappingParticles)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlappingParticles, GetActorLocation(), FRotator(0.f), true);
@@ -82,5 +80,4 @@ void AItem::OnOverlapEnd
 	int32 OtherBodyIndex
 )
 {
-	UE_LOG(LogTemp, Warning, TEXT("On overlap end is firing"));
 }
