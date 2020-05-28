@@ -5,8 +5,7 @@
 # Visual Studio 2015 user specific files
 .vs/
 
-Games/SecondProject/Content/
-!Games/SecondProject/Content/MyContent/
+#Games/SecondProject/Content/
 
 # Compiled Object files
 *.slo
@@ -493,3 +492,5 @@ MigrationBackup/
 /Source/FBX/Walks/In_Place/Walk_08_Listen_Music_Loop_IP.fbx
 /Source/FBX/Walks/Root_Motion/Walk_13_Power_Walk_Loop.fbx
 /Source/FBX/Walks/In_Place/Walk_13_Power_Walk_Loop_IP.fbx
+
+!/Content/MyContent/
