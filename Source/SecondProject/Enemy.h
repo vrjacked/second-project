@@ -64,8 +64,16 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Combat")
     class UBoxComponent* CombatCollision;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Combat")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
     class UAnimMontage* CombatMontage;
+
+    FTimerHandle AttackTimer;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+    float AttackMinTime;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+    float AttackMaxTime;
 
 protected:
     /** Called when the game starts or when spawned */
@@ -102,16 +110,19 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void MoveToTarget(class AMain* Target);
-    
+
+    UFUNCTION()
     void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                               UPrimitiveComponent* OtherComp,
                               int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-    
+    UFUNCTION()
     void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                             UPrimitiveComponent* OtherComp,
                             int32 OtherBodyIndex);
+    
     UFUNCTION(BlueprintCallable)
     void ActivateCollision();
+    
     UFUNCTION(BlueprintCallable)
     void DeactivateCollision();
 

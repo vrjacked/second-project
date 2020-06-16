@@ -96,6 +96,7 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	if(OtherActor)
 	{
+		
 		AEnemy* Enemy = Cast<AEnemy>(OtherActor);
 		if (Enemy)
 		{

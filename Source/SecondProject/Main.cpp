@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "Main.h"
+#include "Enemy.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Engine/World.h"
@@ -10,7 +11,7 @@
 #include "Weapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
-#include "Sound/SoundCue.h"
+#include "Kismet/KismetMathLibrary.h"
 
 /** Sets default values */
 AMain::AMain()
@@ -36,7 +37,11 @@ AMain::AMain()
     /** Set our turn rates for input */
     BaseTurnRate = 65.f;
     BaseLookUpRate = 65.f;
-
+    
+    CombatSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatSphere"));
+    CombatSphere->SetupAttachment(GetRootComponent());
+    CombatSphere->InitSphereRadius(5.5f);
+    
     // Don't rotate character when controller rotates
     // Let that just affect the camera.
     bUseControllerRotationYaw = false;
@@ -65,6 +70,9 @@ AMain::AMain()
     VisibilityEnum = ESlateVisibility::Hidden;
     bLMBdown = false;
     EquippedWeapon = {nullptr};
+
+    InterpSpeed = 15.f;
+    bInterpToEnemey = false;
 }
 
 /** Called to bind functionality to input */
@@ -164,6 +172,18 @@ void AMain::ShowPickupLocations()
     }
 }
 
+FRotator AMain::GetLookAtRotationYaw(FVector Target)
+{
+    FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+    FRotator LookAtRotationYaw(0.f, LookAtRotation.Yaw, 0.f);
+    return LookAtRotationYaw;
+}
+
+void AMain::SetInterpToEnemy(bool Interp)
+{
+    bInterpToEnemey = Interp;
+}
+
 void AMain::DecrementHealth(float Amount)
 {
     Health -= Amount;
@@ -213,9 +233,17 @@ void AMain::Tick(float DeltaTime)
     {
         Exhausted = false;
         StaminaColor = FLinearColor(0.223228, 0.401978, 1.0f, 1.0f);
-        UE_LOG(LogTemp, Warning, TEXT("Recovered"), Stamina);
+    }
+
+    if(bInterpToEnemey && CombatTarget)
+    {
+       FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation()); 
+       FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+       SetActorRotation(InterpRotation);
     }
 }
+
 
 void AMain::Sprint(float Rate)
 {
@@ -228,7 +256,6 @@ void AMain::Sprint(float Rate)
             StaminaColor = FLinearColor(1.0f, 0.313989f, 0.0f, 1.0f);
             SprintingMoving = false;
             Sprinting = false;
-            UE_LOG(LogTemp, Warning, TEXT("Exhausted"), Stamina);
         }
         else
         {
@@ -281,6 +308,8 @@ void AMain::Attack()
     if (!bAttacking)
     {
         bAttacking = true;
+        SetInterpToEnemy(true);
+        
         UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
         if (AnimInstance && CombatMontage)
         {
@@ -307,6 +336,7 @@ void AMain::Attack()
 void AMain::AttackEnd()
 {
     bAttacking = false;
+    SetInterpToEnemy(false);
     if (bLMBdown)
     {
         Attack();

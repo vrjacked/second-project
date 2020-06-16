@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Math/Color.h"
+#include "Components/SphereComponent.h"
 #include "Main.generated.h"
 
 UCLASS()
@@ -69,8 +70,23 @@ public:
 	ESlateVisibility VisibilityEnum;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sounds")
     class USoundCue* HitSound;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="AI")
+	USphereComponent* CombatSphere;
+
+	FRotator GetLookAtRotationYaw(FVector Target);
+	
 	bool Sprinting;
 	bool SprintingMoving;
+
+
+	float InterpSpeed;
+	bool bInterpToEnemey;
+	void SetInterpToEnemy(bool Interp);
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite, Category = "Combat")
+	class AEnemy* CombatTarget;
+
+	FORCEINLINE void SetCombatTarget(AEnemy* Target) {CombatTarget = Target;}
 
 	void DecrementHealth(float Amount);
 	void IncrementJackHammers(int32 Amount);

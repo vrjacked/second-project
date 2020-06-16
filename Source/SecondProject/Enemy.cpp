@@ -10,6 +10,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Sound/SoundCue.h"
 #include "Animation/AnimInstance.h"
+#include "TimerManager.h"
 
 AEnemy::AEnemy()
 {
@@ -31,19 +32,15 @@ AEnemy::AEnemy()
     WeaponMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,
                                   FName("GreatSword2"));
 
-    CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
-    CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
-    
-    CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-    CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-    CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
     bOverlappingCombatSphere = false;
 
     Health = 75.f;
     MaxHealth = 100.f;
     Damage = 10.f;
+
+    AttackMinTime = .5f;
+    AttackMaxTime = 3.5f;
 }
 
 /** Called when the game starts or when spawned*/
@@ -58,9 +55,13 @@ void AEnemy::BeginPlay()
     CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereBegin);
     CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereEnd);
 
-    if (WeaponMesh)
-    {
-    }
+    CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+    CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+    
+    CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+    CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+    CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 }
 
 /** Called every frame*/
@@ -85,6 +86,7 @@ void AEnemy::CombatSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor*
         {
             if (Main)
             {
+                Main->SetCombatTarget(this);
                 CombatTarget = Main;
                 bOverlappingCombatSphere = true;
                 Attack();
@@ -102,12 +104,15 @@ void AEnemy::CombatSphereEnd(UPrimitiveComponent* OverlappedComponent, AActor* O
         {
             if (Main)
             {
-                CombatTarget = Main;
+                Main->SetCombatTarget(nullptr);
                 bOverlappingCombatSphere = false;
                 if (EnemyMovementStatus != EEnemyMovementStatus::Attacking)
+                
                 {
                     MoveToTarget(Main);
+                    CombatTarget = nullptr;
                 }
+                GetWorldTimerManager().ClearTimer(AttackTimer);
             }
         }
     }
@@ -186,9 +191,10 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
         {
             if (Main->HitParticles)
             {
-                const USkeletalMeshSocket* BloodSocket = GetMesh()->GetSocketByName("BloodSocket");
+                const USkeletalMeshSocket* BloodSocket = GetMesh()->GetSocketByName("BloodSpawner");
                 if (BloodSocket)
                 {
+                    
                     FVector SocketLocation = BloodSocket->GetSocketLocation(GetMesh());
                     UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->HitParticles, SocketLocation,
                                                              FRotator(0.f), false);
@@ -232,7 +238,7 @@ void AEnemy::Attack()
         if (AnimInstance)
         {
             AnimInstance->Montage_Play(CombatMontage, 1.35f);
-            AnimInstance->Montage_JumpToSection(FName("Attack1"), CombatMontage);
+            AnimInstance->Montage_JumpToSection(FName("Attack2"), CombatMontage);
         }
         if (SwingSound)
         {
@@ -246,6 +252,10 @@ void AEnemy::AttackEnd()
     bAttacking = false;
     if (bOverlappingCombatSphere)
     {
-        Attack();
+        float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+        GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
+    } else
+    {
+        this->SetEnemyMovementStatus(EEnemyMovementStatus::MoveToTarget);
     }
 }
