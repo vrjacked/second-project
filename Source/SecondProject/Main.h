@@ -16,6 +16,14 @@ public:
     /** Sets default values for this character's properties */
     AMain();
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Combat")
+    bool bHasCombatTarget;
+
+    FORCEINLINE void SetHasCombatTarget(bool HasTarget) {bHasCombatTarget = HasTarget;}
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Controller")
+    class AMainPlayerController* MainPlayerController;
+        
     TArray<FVector> PickupLocations;
 
     UFUNCTION(BlueprintCallable)
@@ -24,53 +32,80 @@ public:
     /** Camera boom positioning the camera behind the player */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
     class USpringArmComponent* CameraBoom;
+    
     /** Follow Camera */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
     class UCameraComponent* FollowCamera;
+    
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Items")
     class AWeapon* EquippedWeapon;
+    
     UPROPERTY(BlueprintReadOnly, category = "PlayerStats | Stamina")
     FLinearColor StaminaColor;
+    
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
     class AItem* ActiveOverlappingItem;
+    
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
     class UAnimMontage* CombatMontage;
 
     /** Base turn rates to scale turning functions for the camera */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
     float BaseTurnRate;
+    
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
     float BaseLookUpRate;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats")
     float MaxHealth;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats")
     float Health;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     float Stamina;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     float MaxStamina;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     bool Exhausted;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     float ExhaustedRecoveryCutoff;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     float StaminaRecoveryRate;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, category = "PlayerStats | Stamina")
     float StaminaExhaustedRecoveryRate;
+    
     UPROPERTY(EditAnywhere, category = "PlayerStats | Stamina")
     float StaminaDrainRate;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anims")
     bool bAttacking;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Particles")
     class UParticleSystem* HitParticles;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite = "PlayerStats")
     int32 Jackhammers;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite = "PlayerStats")
     ESlateVisibility VisibilityEnum;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sounds")
     class USoundCue* HitSound;
+    
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="AI")
     USphereComponent* CombatSphere;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Combat")
+    FVector CombatTargetLocation;
+
+    
+    
     FRotator GetLookAtRotationYaw(FVector Target);
     bool Sprinting;
     bool SprintingMoving;
@@ -85,6 +120,7 @@ public:
                              class AController* EventInstigator, AActor* DamageCauser) override;
     void IncrementJackHammers(int32 Amount);
     void Die();
+
 
 protected:
     /** Called when the game starts or when spawned */

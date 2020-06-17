@@ -12,6 +12,8 @@
 #include "Animation/AnimInstance.h"
 #include "TimerManager.h"
 #include "Components/CapsuleComponent.h"
+#include "MainPlayerController.h"
+#include "EdGraph/EdGraphNode.h"
 
 AEnemy::AEnemy()
 {
@@ -44,16 +46,22 @@ AEnemy::AEnemy()
 
     EnemyMovementStatus = EEnemyMovementStatus::Idle;
 
-    DeathDelay = 3.f; 
+    DeathDelay = 3.f;
+}
+
+/** Called every frame*/
+void AEnemy::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
 }
 
 float AEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
-    AActor* DamageCauser)
+                         AActor* DamageCauser)
 {
     if (Health - DamageAmount <= 0.0f)
     {
-       Health -= DamageAmount;
-       Die();
+        Health -= DamageAmount;
+        Die();
     }
     else
     {
@@ -76,9 +84,7 @@ void AEnemy::Die()
     CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     AggroSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CombatSphere->SetCollisionEnabled((ECollisionEnabled::NoCollision));
-
     GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    
 }
 
 void AEnemy::DeathEnd()
@@ -91,7 +97,7 @@ void AEnemy::DeathEnd()
 
 bool AEnemy::Alive()
 {
-    return GetEnemyMovementStatus() != EEnemyMovementStatus::Dead; 
+    return GetEnemyMovementStatus() != EEnemyMovementStatus::Dead;
 }
 
 void AEnemy::Dissapear()
@@ -99,32 +105,25 @@ void AEnemy::Dissapear()
     Destroy();
 }
 
-
 /** Called when the game starts or when spawned*/
 void AEnemy::BeginPlay()
 {
     Super::BeginPlay();
     AIController = Cast<AAIController>(GetController());
 
-    AggroSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::AggroSphereBegin);
-    AggroSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::AggroSphereEnd);
+    AggroSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::AggroSphereEnter);
+    AggroSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::AggroSphereExit);
 
-    CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereBegin);
-    CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereEnd);
+    CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereEnter);
+    CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereExit);
 
-    CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
-    CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+    CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::WeaponOverlapBegin);
+    CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::WeaponOverlapEnd);
 
     CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
     CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
     CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-}
-
-/** Called every frame*/
-void AEnemy::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
 }
 
 /** Called to bind functionality to input*/
@@ -133,51 +132,7 @@ void AEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void AEnemy::CombatSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                               const FHitResult& SweepResult)
-{
-    if (OtherActor && Alive())
-    {
-        AMain* Main = Cast<AMain>(OtherActor);
-        if (Main)
-        {
-            Main->SetCombatTarget(this);
-            CombatTarget = Main;
-            bOverlappingCombatSphere = true;
-            Attack();
-        }
-    }
-}
-
-void AEnemy::CombatSphereEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                             UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-    if (OtherActor)
-    {
-        AMain* Main = Cast<AMain>(OtherActor);
-        {
-            if (Main)
-            {
-                if (Main->CombatTarget == this)
-                {
-                    Main->SetCombatTarget(nullptr);
-                }
-                Main->SetCombatTarget(nullptr);
-                bOverlappingCombatSphere = false;
-                if (EnemyMovementStatus != EEnemyMovementStatus::Attacking)
-
-                {
-                    MoveToTarget(Main);
-                    CombatTarget = nullptr;
-                }
-                GetWorldTimerManager().ClearTimer(AttackTimer);
-            }
-        }
-    }
-}
-
-void AEnemy::AggroSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+void AEnemy::AggroSphereEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                               const FHitResult& SweepResult)
 {
@@ -187,66 +142,74 @@ void AEnemy::AggroSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor* 
         if (Main)
         {
             MoveToTarget(Main);
-            CombatTarget = nullptr;
         }
     }
 }
 
-void AEnemy::AggroSphereEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                            UPrimitiveComponent* OtherComp,
-                            int32 OtherBodyIndex)
+void AEnemy::AggroSphereExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                             UPrimitiveComponent* OtherComp,
+                             int32 OtherBodyIndex)
 {
-    if (OtherActor)
+    AMain* Main = Cast<AMain>(OtherActor);
+    if (OtherActor && Main)
+    {
+        Main->SetHasCombatTarget(false);
+        if (Main->MainPlayerController)
+        {
+            Main->MainPlayerController->RemoveEnemyHealthBar();
+        }
+        CombatTarget = nullptr;
+        Main = nullptr;
+        SetEnemyMovementStatus(EEnemyMovementStatus::Idle);
+        if (AIController)
+        {
+            AIController->StopMovement();
+        }
+    }
+}
+
+void AEnemy::CombatSphereEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                               const FHitResult& SweepResult)
+{
+    AMain* Main = Cast<AMain>(OtherActor);
+    if (OtherActor && Alive() && Main)
+    {
+        Main->SetCombatTarget(this);
+        Main->SetHasCombatTarget(true);
+        if (Main->MainPlayerController)
+        {
+            Main->MainPlayerController->DisplayEnemyHealthBar();
+        }
+        CombatTarget = Main;
+        bOverlappingCombatSphere = true;
+        Attack();
+    }
+}
+
+void AEnemy::CombatSphereExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                              UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+    AMain* Main = Cast<AMain>(OtherActor);
+    if (OtherActor && Main)
+    {
+        {
+            bOverlappingCombatSphere = false;
+            if (EnemyMovementStatus != EEnemyMovementStatus::Attacking)
+            {
+                MoveToTarget(Main);
+            }
+            GetWorldTimerManager().ClearTimer(AttackTimer);
+        }
+    }
+}
+
+    void AEnemy::WeaponOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                    const FHitResult& SweepResult)
     {
         AMain* Main = Cast<AMain>(OtherActor);
-        if (Main)
-        {
-            SetEnemyMovementStatus(EEnemyMovementStatus::Idle);
-            if (AIController)
-            {
-                AIController->StopMovement();
-            }
-        }
-    }
-}
-
-void AEnemy::MoveToTarget(AMain* Target)
-{
-    SetEnemyMovementStatus(EEnemyMovementStatus::MoveToTarget);
-
-    if (AIController)
-    {
-        FAIMoveRequest MoveRequest;
-        MoveRequest.SetGoalActor(Target);
-        MoveRequest.SetAcceptanceRadius(25.0f);
-
-
-        FNavPathSharedPtr NavPath;
-
-
-        AIController->MoveTo(MoveRequest, &NavPath);
-
-
-        if (NavPath != nullptr)
-        {
-            auto PathPoints = NavPath->GetPathPoints();
-            for (auto Point : PathPoints)
-            {
-                FVector Location = Point.Location;
-                UKismetSystemLibrary::DrawDebugSphere(this, Location, 25.f, 10.f, FLinearColor::Red, 1.5);
-            }
-        }
-    }
-}
-
-void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-                                  const FHitResult& SweepResult)
-{
-    if (OtherActor)
-    {
-        AMain* Main = Cast<AMain>(OtherActor);
-        if (Main)
+        if (OtherActor && Main)
         {
             if (Main->HitParticles)
             {
@@ -264,40 +227,63 @@ void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAct
             }
             if (DamageTypeClass)
             {
-                UGameplayStatics::ApplyDamage(Main, Damage, AIController, this, DamageTypeClass); 
+                UGameplayStatics::ApplyDamage(Main, Damage, AIController, this,
+                                              DamageTypeClass);
             }
         }
     }
-}
 
-void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-    bOverlappingCombatSphere = false;
-}
-
-void AEnemy::ActivateCollision()
-{
-    CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-}
-
-void AEnemy::DeactivateCollision()
-{
-    CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-}
-
-void AEnemy::Attack()
-{
-    if (Alive())
+    void AEnemy::WeaponOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
     {
+    }
+
+    void AEnemy::MoveToTarget(AMain* Target)
+    {
+        SetEnemyMovementStatus(EEnemyMovementStatus::MoveToTarget);
+
         if (AIController)
         {
-            AIController->StopMovement();
-            SetEnemyMovementStatus(EEnemyMovementStatus::Attacking);
+            FAIMoveRequest MoveRequest;
+            MoveRequest.SetGoalActor(Target);
+            MoveRequest.SetAcceptanceRadius(25.0f);
+
+            FNavPathSharedPtr NavPath;
+
+            AIController->MoveTo(MoveRequest, &NavPath);
+
+            if (NavPath != nullptr)
+            {
+                auto PathPoints = NavPath->GetPathPoints();
+                for (auto Point : PathPoints)
+                {
+                    FVector Location = Point.Location;
+                    UKismetSystemLibrary::DrawDebugSphere(this, Location, 25.f, 10.f,
+                                                          FLinearColor::Red, 1.5);
+                }
+            }
         }
-        if (!bAttacking)
+    }
+
+    void AEnemy::ActivateCollision()
+    {
+        CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    }
+
+    void AEnemy::DeactivateCollision()
+    {
+        CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    void AEnemy::Attack()
+    {
+        if (Alive())
         {
-            bAttacking = true;
+            if (AIController)
+            {
+                AIController->StopMovement();
+            }
+            SetEnemyMovementStatus(EEnemyMovementStatus::Attacking);
             UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
             if (AnimInstance)
             {
@@ -310,18 +296,16 @@ void AEnemy::Attack()
             }
         }
     }
-}
 
-void AEnemy::AttackEnd()
-{
-    bAttacking = false;
-    if (bOverlappingCombatSphere)
+    void AEnemy::AttackEnd()
     {
-        float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
-        GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
+        if (bOverlappingCombatSphere)
+        {
+            float AttackTime = FMath::FRandRange(AttackMinTime, AttackMaxTime);
+            GetWorldTimerManager().SetTimer(AttackTimer, this, &AEnemy::Attack, AttackTime);
+        }
+        else
+        {
+            MoveToTarget(CombatTarget);
+        }
     }
-    else
-    {
-        this->SetEnemyMovementStatus(EEnemyMovementStatus::MoveToTarget);
-    }
-}

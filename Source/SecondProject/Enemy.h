@@ -110,24 +110,24 @@ public:
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
     UFUNCTION()
-    virtual void CombatSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    virtual void CombatSphereEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                    const FHitResult& SweepResult
     );
 
     UFUNCTION()
-    virtual void CombatSphereEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    virtual void CombatSphereExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex
     );
 
     UFUNCTION()
-    virtual void AggroSphereBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    virtual void AggroSphereEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                   UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
                                   const FHitResult& SweepResult
     );
 
     UFUNCTION()
-    virtual void AggroSphereEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    virtual void AggroSphereExit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex
     );
 
@@ -135,11 +135,11 @@ public:
     void MoveToTarget(class AMain* Target);
 
     UFUNCTION()
-    void CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    void WeaponOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                               UPrimitiveComponent* OtherComp,
                               int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
     UFUNCTION()
-    void CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+    void WeaponOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                             UPrimitiveComponent* OtherComp,
                             int32 OtherBodyIndex);
     

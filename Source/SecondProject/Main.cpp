@@ -12,6 +12,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MainPlayerController.h"
 
 /** Sets default values */
 AMain::AMain()
@@ -73,6 +74,8 @@ AMain::AMain()
 
     InterpSpeed = 15.f;
     bInterpToEnemey = false;
+
+    bHasCombatTarget = false;
 }
 
 /** Called to bind functionality to input */
@@ -220,7 +223,8 @@ void AMain::Die()
 void AMain::BeginPlay()
 {
     Super::BeginPlay();
-    bAttacking = false;
+
+    MainPlayerController = Cast<AMainPlayerController>(GetController());
 }
 
 /** Called every frame */
@@ -248,13 +252,22 @@ void AMain::Tick(float DeltaTime)
         Exhausted = false;
         StaminaColor = FLinearColor(0.223228, 0.401978, 1.0f, 1.0f);
     }
-
+    
     if(bInterpToEnemey && CombatTarget)
     {
        FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation()); 
        FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
        SetActorRotation(InterpRotation);
+    }
+
+    if (CombatTarget)
+    {
+        CombatTargetLocation = CombatTarget->GetActorLocation();
+        if (MainPlayerController)
+        {
+            MainPlayerController->EnemyLocation = CombatTargetLocation;
+        }
     }
 }
 
