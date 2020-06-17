@@ -193,6 +193,14 @@ void AMain::DecrementHealth(float Amount)
     }
 }
 
+float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
+    AActor* DamageCauser)
+{
+    DecrementHealth(DamageAmount);
+    
+    return DamageAmount;
+}
+
 void AMain::IncrementJackHammers(int32 Amount)
 {
     this->Jackhammers += Amount;
@@ -200,6 +208,12 @@ void AMain::IncrementJackHammers(int32 Amount)
 
 void AMain::Die()
 {
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+    if(AnimInstance && CombatMontage)
+    {
+        AnimInstance->Montage_Play(CombatMontage, 1.0f);
+        AnimInstance->Montage_JumpToSection(FName("Death"));
+    } 
 }
 
 /** Called when the game starts or when spawned */
@@ -305,12 +319,12 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 
 void AMain::Attack()
 {
+    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
     if (!bAttacking)
     {
         bAttacking = true;
         SetInterpToEnemy(true);
         
-        UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
         if (AnimInstance && CombatMontage)
         {
             int32 Section = FMath::RandRange(0, 1);

@@ -15,6 +15,7 @@ UENUM(BlueprintType) enum class EEnemyMovementStatus :uint8
     Idle UMETA(DisplayName = "Idle"),
     MoveToTarget UMETA(DisplayName = "MoveToTarget"),
     Attacking UMETA(DisplayName = "Attacking"),
+    Dead UMETA(DisplayName = "Dead")
 };
 
 UCLASS()
@@ -30,6 +31,7 @@ public:
     EEnemyMovementStatus EnemyMovementStatus;
 
     FORCEINLINE void SetEnemyMovementStatus(EEnemyMovementStatus const Status) { EnemyMovementStatus = Status; }
+    FORCEINLINE EEnemyMovementStatus GetEnemyMovementStatus() { return EnemyMovementStatus; }
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="AI")
     class USphereComponent* AggroSphere;
@@ -75,6 +77,27 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
     float AttackMaxTime;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+    TSubclassOf<UDamageType> DamageTypeClass;
+
+    FTimerHandle DeathTimer;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+    float DeathDelay;
+    
+    virtual auto TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+                            class AController* EventInstigator, AActor* DamageCauser) -> float override;
+
+   void Die();
+
+   UFUNCTION(BlueprintCallable)
+   void DeathEnd();
+
+    UFUNCTION(BlueprintCallable)
+   bool Alive();
+
+    void Dissapear();
+    
 protected:
     /** Called when the game starts or when spawned */
     virtual void BeginPlay() override;
