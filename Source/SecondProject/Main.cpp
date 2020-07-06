@@ -38,11 +38,11 @@ AMain::AMain()
     /** Set our turn rates for input */
     BaseTurnRate = 65.f;
     BaseLookUpRate = 65.f;
-    
+
     CombatSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CombatSphere"));
     CombatSphere->SetupAttachment(GetRootComponent());
     CombatSphere->InitSphereRadius(5.5f);
-    
+
     // Don't rotate character when controller rotates
     // Let that just affect the camera.
     bUseControllerRotationYaw = false;
@@ -55,6 +55,7 @@ AMain::AMain()
     GetCharacterMovement()->JumpZVelocity = 650.f;
     GetCharacterMovement()->AirControl = 0.8f;
 
+    bDead = false;
     Sprinting = false;
     SprintingMoving = false;
     Exhausted = false;
@@ -84,7 +85,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
     Super::SetupPlayerInputComponent(PlayerInputComponent);
     check(PlayerInputComponent);
 
-    PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+    PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMain::Jump);
     PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
     PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
@@ -109,7 +110,7 @@ void AMain::MoveForward(float Value)
     /** Good practice to make sure not a null pointer
      *  also checking to make sure button is being pressed
      */
-    if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking))
+    if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && !bDead)
     {
         /** Find out which way is forward */
         const FRotator Rotation = Controller->GetControlRotation();
@@ -134,7 +135,7 @@ void AMain::MoveForward(float Value)
 
 void AMain::MoveRight(float Value)
 {
-    if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking))
+    if ((Controller != nullptr) && (Value != 0.0f) && (!bAttacking) && !bDead)
     {
         const FRotator Rotation = Controller->GetControlRotation();
         const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -189,34 +190,69 @@ void AMain::SetInterpToEnemy(bool Interp)
 
 void AMain::DecrementHealth(float Amount)
 {
-    Health -= Amount;
-    if (Health <= 0.f)
-    {
-        Die();
-    }
 }
 
 float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator,
-    AActor* DamageCauser)
+                        AActor* DamageCauser)
 {
-    DecrementHealth(DamageAmount);
-    
+    if (Health - DamageAmount <= 0.f)
+    {
+        Health -= DamageAmount;
+        Die();
+        if(DamageCauser)
+        {
+            AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
+            if(Enemy)
+            {
+                Enemy->bHasValidTarget = false;
+            }
+        }
+    }
+    else
+    {
+        Health -= DamageAmount;
+    }
     return DamageAmount;
 }
 
 void AMain::IncrementJackHammers(int32 Amount)
 {
     this->Jackhammers += Amount;
+    this->VisibilityEnum = ESlateVisibility::Visible;
+}
+
+void AMain::IncrementHealth(float Amount)
+{
+    if(Health + Amount >= MaxHealth)
+    {
+        Health = MaxHealth;
+    }
+    else
+    {
+        Health += Amount;
+    }
 }
 
 void AMain::Die()
 {
-    UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-    if(AnimInstance && CombatMontage)
+    if (!bDead)
     {
-        AnimInstance->Montage_Play(CombatMontage, 1.0f);
-        AnimInstance->Montage_JumpToSection(FName("Death"));
-    } 
+        UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+        if (AnimInstance && CombatMontage)
+        {
+            AnimInstance->Montage_Play(CombatMontage, 1.0f);
+            AnimInstance->Montage_JumpToSection(FName("Death"));
+        }
+        bDead = true;
+    }
+}
+
+void AMain::Jump()
+{
+    if (!bDead)
+    {
+        Super::Jump();
+    }
 }
 
 /** Called when the game starts or when spawned */
@@ -252,13 +288,13 @@ void AMain::Tick(float DeltaTime)
         Exhausted = false;
         StaminaColor = FLinearColor(0.223228, 0.401978, 1.0f, 1.0f);
     }
-    
-    if(bInterpToEnemey && CombatTarget)
-    {
-       FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation()); 
-       FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 
-       SetActorRotation(InterpRotation);
+    if (bInterpToEnemey && CombatTarget)
+    {
+        FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+        FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+
+        SetActorRotation(InterpRotation);
     }
 
     if (CombatTarget)
@@ -299,6 +335,8 @@ void AMain::Sprint(float Rate)
 void AMain::LMBDown()
 {
     bLMBdown = true;
+
+    if (bDead == true) return;
     if (ActiveOverlappingItem)
     {
         AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
@@ -333,11 +371,11 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet)
 void AMain::Attack()
 {
     UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-    if (!bAttacking)
+    if (!bAttacking && !bDead)
     {
         bAttacking = true;
         SetInterpToEnemy(true);
-        
+
         if (AnimInstance && CombatMontage)
         {
             int32 Section = FMath::RandRange(0, 1);
@@ -372,8 +410,56 @@ void AMain::AttackEnd()
 
 void AMain::PlaySwingSound()
 {
-    if(EquippedWeapon->SwingSound)
+    if (EquippedWeapon->SwingSound)
     {
         UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
+    }
+}
+
+void AMain::DeathEnd()
+{
+    GetMesh()->bPauseAnims = true;
+    GetMesh()->bNoSkeletonUpdate = true;
+}
+
+void AMain::UpdateCombatTarget()
+{
+    TArray<AActor*> OverlappingActors;
+    GetOverlappingActors(OverlappingActors, EnemyFilter);
+
+    if(OverlappingActors.Num() == 0)
+    {
+        if(MainPlayerController)
+        {
+            MainPlayerController->RemoveEnemyHealthBar();
+        }
+        return;
+    }
+
+    AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
+    if(ClosestEnemy)
+    {
+        FVector Location = GetActorLocation();
+        float MinDistance = (ClosestEnemy->GetActorLocation() - Location).Size();
+
+        for (auto Actor : OverlappingActors)
+        {
+            AEnemy* Enemy = Cast<AEnemy>(Actor);
+            if (Enemy)
+            {
+                float DistanceToActor = (Enemy->GetActorLocation() - Location).Size();
+                if(DistanceToActor < MinDistance)
+                {
+                    MinDistance = DistanceToActor;
+                    ClosestEnemy = Enemy;
+                }
+            }
+        }
+        if (MainPlayerController)
+        {
+            MainPlayerController->DisplayEnemyHealthBar();
+        }
+        SetCombatTarget(ClosestEnemy);
+        bHasCombatTarget = true;
     }
 }

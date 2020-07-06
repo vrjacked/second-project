@@ -18,14 +18,13 @@ ACollider::ACollider()
 
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	RootComponent = SphereComponent;
-	SphereComponent->SetupAttachment(GetRootComponent());
 
 	SphereComponent->SetSphereRadius(80.0f);
 	SphereComponent->SetCollisionProfileName(TEXT("Pawn"));
 	
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->AttachToComponent( RootComponent, FAttachmentTransformRules::SnapToTargetIncludingScale );
+	//MeshComponent->AttachToComponent( RootComponent, FAttachmentTransformRules::SnapToTargetIncludingScale );
 	MeshComponent->SetupAttachment(GetRootComponent());
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshComponentAsset(TEXT("StaticMesh'/Game/StarterContent/Shapes/Shape_Sphere.Shape_Sphere'"));
 	FVector	meshLocation = MeshComponent->GetComponentLocation();

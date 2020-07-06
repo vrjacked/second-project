@@ -27,6 +27,8 @@ public:
     /** Sets default values for this character's properties */
     AEnemy();
 
+    bool bHasValidTarget;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
     EEnemyMovementStatus EnemyMovementStatus;
 
@@ -87,8 +89,6 @@ public:
     
     virtual auto TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                             class AController* EventInstigator, AActor* DamageCauser) -> float override;
-
-   void Die();
 
    UFUNCTION(BlueprintCallable)
    void DeathEnd();
@@ -162,4 +162,6 @@ public:
     
     UFUNCTION(BlueprintCallable)
     void AttackEnd();
+
+    void Die(AActor* Causer);
 };

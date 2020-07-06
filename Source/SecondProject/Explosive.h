@@ -22,6 +22,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	float Damage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UFUNCTION()
 	virtual void OnOverlapBegin(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
@@ -31,6 +35,7 @@ public:
 		const FHitResult& SweepResult
 	);
 
+	UFUNCTION()
 	virtual void OnOverlapEnd
 	(
 		UPrimitiveComponent* OverlappedComponent,

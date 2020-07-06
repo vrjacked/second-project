@@ -1,6 +1,12 @@
 /** Fill out your copyright notice in the Description page of Project Settings. */
 #include "Explosive.h"
 #include "Main.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Sound/SoundCue.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Enemy.h"
+#include "Kismet/GameplayStatics.h"
 
 AExplosive::AExplosive()
 {
@@ -15,10 +21,20 @@ void AExplosive::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor
     if (OtherActor)
     {
         AMain* Main = Cast<AMain>(OtherActor);
-        if (Main)
-
+        AEnemy* Enemy = Cast<AEnemy>(OtherActor);
+        if (Main || Enemy)
         {
-            Main->DecrementHealth(Damage);
+            if (OverlappingParticles)
+            {
+                UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlappingParticles, GetActorLocation(),
+                                                         FRotator(0.f),
+                                                         true);
+            }
+            if (OverlapSound)
+            {
+                UGameplayStatics::PlaySound2D(this, OverlapSound);
+            }
+            UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, DamageTypeClass);
             Destroy();
         }
     }

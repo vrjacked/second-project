@@ -118,8 +118,16 @@ public:
     void DecrementHealth(float Amount);
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
                              class AController* EventInstigator, AActor* DamageCauser) override;
+    
+    UFUNCTION(BlueprintCallable)
     void IncrementJackHammers(int32 Amount);
+    
+    UFUNCTION(BlueprintCallable)
+    void IncrementHealth(float Amount);
+    
     void Die();
+    bool bDead;
+    virtual void Jump() override;
 
 
 protected:
@@ -169,4 +177,14 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void PlaySwingSound();
+
+    UFUNCTION(BlueprintCallable)
+    void DeathEnd(); 
+
+    UFUNCTION(BlueprintCallable)
+    void UpdateCombatTarget();
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+    TSubclassOf<AEnemy> EnemyFilter;
+    
 };
