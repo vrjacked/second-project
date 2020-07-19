@@ -13,6 +13,7 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "MainPlayerController.h"
+#include "SaveGame_Custom.h"
 
 /** Sets default values */
 AMain::AMain()
@@ -199,10 +200,10 @@ float AMain::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, ACo
     {
         Health -= DamageAmount;
         Die();
-        if(DamageCauser)
+        if (DamageCauser)
         {
             AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
-            if(Enemy)
+            if (Enemy)
             {
                 Enemy->bHasValidTarget = false;
             }
@@ -223,7 +224,7 @@ void AMain::IncrementJackHammers(int32 Amount)
 
 void AMain::IncrementHealth(float Amount)
 {
-    if(Health + Amount >= MaxHealth)
+    if (Health + Amount >= MaxHealth)
     {
         Health = MaxHealth;
     }
@@ -427,9 +428,9 @@ void AMain::UpdateCombatTarget()
     TArray<AActor*> OverlappingActors;
     GetOverlappingActors(OverlappingActors, EnemyFilter);
 
-    if(OverlappingActors.Num() == 0)
+    if (OverlappingActors.Num() == 0)
     {
-        if(MainPlayerController)
+        if (MainPlayerController)
         {
             MainPlayerController->RemoveEnemyHealthBar();
         }
@@ -437,7 +438,7 @@ void AMain::UpdateCombatTarget()
     }
 
     AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
-    if(ClosestEnemy)
+    if (ClosestEnemy)
     {
         FVector Location = GetActorLocation();
         float MinDistance = (ClosestEnemy->GetActorLocation() - Location).Size();
@@ -448,7 +449,7 @@ void AMain::UpdateCombatTarget()
             if (Enemy)
             {
                 float DistanceToActor = (Enemy->GetActorLocation() - Location).Size();
-                if(DistanceToActor < MinDistance)
+                if (DistanceToActor < MinDistance)
                 {
                     MinDistance = DistanceToActor;
                     ClosestEnemy = Enemy;
@@ -463,3 +464,57 @@ void AMain::UpdateCombatTarget()
         bHasCombatTarget = true;
     }
 }
+
+void AMain::SwitchLevel(FName LevelName)
+{
+    UWorld* World = GetWorld();
+    if (World)
+    {
+        FString CurrentLevel = World->GetMapName();
+
+        FName CurrentLevelName(*CurrentLevel);
+        if (CurrentLevelName != LevelName)
+        {
+            UGameplayStatics::OpenLevel(World, LevelName);
+        }
+    }
+}
+
+void AMain::SaveGame()
+{
+    USaveGame_Custom* SaveGameInstance = Cast<USaveGame_Custom>(
+        UGameplayStatics::CreateSaveGameObject(USaveGame_Custom::StaticClass()));
+
+    SaveGameInstance->CharacterStats.Health = Health;
+    SaveGameInstance->CharacterStats.MaxHealth = MaxHealth;
+    SaveGameInstance->CharacterStats.Jackhammer = Jackhammers;
+    SaveGameInstance->CharacterStats.Stamina = Stamina;
+    SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
+
+    SaveGameInstance->CharacterStats.Location = GetActorLocation();
+    SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
+
+    UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->PlayerName, SaveGameInstance->UserIndex);
+}
+
+void AMain::LoadGame(bool SetPosition)
+{
+    USaveGame_Custom* LoadGameInstance = Cast<USaveGame_Custom>(
+        UGameplayStatics::CreateSaveGameObject(USaveGame_Custom::StaticClass()));
+
+    LoadGameInstance = Cast<USaveGame_Custom>(
+        UGameplayStatics::LoadGameFromSlot(LoadGameInstance->PlayerName, LoadGameInstance->UserIndex));
+
+    Health = LoadGameInstance->CharacterStats.Health;
+    MaxHealth = LoadGameInstance->CharacterStats.MaxHealth;
+    Stamina = LoadGameInstance->CharacterStats.Stamina;
+    MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
+    Jackhammers = LoadGameInstance->CharacterStats.Jackhammer;
+
+    if (SetPosition)
+    {
+        SetActorLocation(LoadGameInstance->CharacterStats.Location);
+        SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
+    }
+}
+    

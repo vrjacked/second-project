@@ -22,7 +22,6 @@ public:
 
     APickup();
 
-
     UFUNCTION()
     virtual void OnOverlapBegin
     (
